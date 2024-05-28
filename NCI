@@ -1,1 +1,34 @@
 scp /Users/xinhuiw/Downloads/holland/Willis_station/T_wa.nc xw6141@gadi.nci.org.au:/g/data/v45/xw6141/PhD/data
+
+
+读取变量，写入文件
+import os
+import xarray as xr
+import calendar
+
+by = 1950
+ey = 1979
+bm = 1
+em = 12
+
+path = '/g/data/rt52/era5/pressure-levels/monthly-averaged/q/'
+q_mon = None  # 初始化变量 q_mon
+
+for year in range(by, ey + 1):  # 遍历从 by（起始年份）到 ey（结束年份）的所有年份
+    for month in range(bm, em + 1):  # 遍历每年的 bm（起始月份）到 em（结束月份）
+        start_date = f"{year}{str(month).zfill(2)}01"  # 格式化开始日期
+        last_day = calendar.monthrange(year, month)[1]  # 获取该月的最后一天
+        end_date = f"{year}{str(month).zfill(2)}{last_day}"  # 格式化结束日期
+        fn = f"{path}{year}/q_era5_moda_pl_{start_date}-{end_date}.nc"  # 构造文件名
+
+        if os.path.exists(fn):  # 检查文件是否存在
+            ds = xr.open_dataset(fn)  # 使用 xarray 打开 NetCDF 文件
+            ds_sec = ds.sel(latitude=slice(-16.30, -16.20), longitude=slice(149.5, 150.5))  # 选择特定纬度和经度范围的数据
+            q_ = ds_sec.q  # 提取变量 'q'，假设它表示某种气象变量
+
+            if q_mon is None:  # 如果 q_mon 尚未初始化
+                q_mon = q_.copy()  # 初始化 q_mon，使用 copy() 方法避免修改原始数据
+            else:
+                q_mon = xr.concat([q_mon, q_], dim="time")  # 将当前月的数据与之前的数据在时间维度上连接起来
+
+# 在这里可以进行进一步的数据处理
